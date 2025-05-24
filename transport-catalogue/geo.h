@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cmath>
-
+namespace geo {
 struct Coordinates {
     double lat;
     double lng;
@@ -12,8 +12,9 @@ struct Coordinates {
         return !(*this == other);
     }
 };
+}
 
-inline double ComputeDistance(Coordinates from, Coordinates to) {
+inline double ComputeDistance(geo::Coordinates from, geo::Coordinates to) {
     using namespace std;
     if (from == to) {
         return 0;
