@@ -2,6 +2,7 @@
 #include "geo.h"
 #include <set>
 #include <iostream>
+#include <optional>
 
 void TransportCatalogue::AddStop(const std::string& name, const geo::Coordinates& coordinates) {
     stops_.push_back({name, coordinates});
@@ -29,41 +30,23 @@ void TransportCatalogue::AddRoute(const std::string& name, const std::vector<std
     route_by_name_[routes_.back().name] = &routes_.back();
 }
 
-void TransportCatalogue::PrintRouteInfo(const std::string& name, std::ostream& output) const {
-    auto it = route_by_name_.find(name);
-    if (it == route_by_name_.end()) {
-        output << "Bus " << name << ": not found" << std::endl;
-        return;
+std::optional<std::set<std::string>> TransportCatalogue::GetStopInfo(const std::string& name) const {
+    
+    if (stop_by_name_.find(name) == stop_by_name_.end()) {
+        return std::nullopt;
     }
-
-    output << "Bus " << name << ": "
-           << GetStopsCount(name) << " stops on route, "
-           << GetUniqueStopsCount(name) << " unique stops, "
-           << GetRouteLength(name) << " route length" << std::endl;
+    if (routes_by_stop_.find(name) == routes_by_stop_.end()) {
+        return std::set<std::string>();
+    }
+    return routes_by_stop_.at(name);
 }
 
-void TransportCatalogue::PrintStopInfo(const std::string& name, std::ostream& output) const {
-    auto it = stop_by_name_.find(name);
-    if (it == stop_by_name_.end()) {
-        output << "Stop " << name << ": not found" << std::endl;
-        return;
+std::optional<RouteInfo> TransportCatalogue::GetRouteInfo(const std::string& name) const {
+    auto it = route_by_name_.find(name);
+    if (it == route_by_name_.end()) {
+        return std::nullopt;
     }
-
-    output << "Stop " << name << ": ";
-    
-    auto routes_it = routes_by_stop_.find(name);
-    if (routes_it == routes_by_stop_.end() || routes_it->second.empty()) {
-        output << "no buses" << std::endl;
-    } else {
-        output << "buses ";
-        bool first = true;
-        for (const auto& route_name : routes_it->second) {
-            if (!first) {
-                output << " ";
-            }
-            output << route_name;
-            first = false;
-        }
-        output << std::endl;
-    }
+    return RouteInfo{static_cast<int>(it->second->stops.size()),
+                     static_cast<int>(std::set<const Stop*>(it->second->stops.begin(), it->second->stops.end()).size()),
+                     GetRouteLength(name)};
 }

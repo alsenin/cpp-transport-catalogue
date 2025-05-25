@@ -19,30 +19,21 @@ struct Route {
     std::vector<const Stop*> stops;
 };
 
+struct RouteInfo {
+    int stops_count;
+    int unique_stops_count;
+    double route_length;
+};
+
 class TransportCatalogue {
 public:
     TransportCatalogue() = default;
     void AddStop(const std::string& name, const geo::Coordinates& coordinates);
     void AddRoute(const std::string& name, const std::vector<std::string_view>& stops);
-    void PrintRouteInfo(const std::string& name, std::ostream& output) const;
-    void PrintStopInfo(const std::string& name, std::ostream& output) const;
+    std::optional<std::set<std::string>> GetStopInfo(const std::string& name) const;
+    std::optional<RouteInfo> GetRouteInfo(const std::string& name) const;
 
 private:
-int GetUniqueStopsCount(const std::string& name) const {
-    std::set<const Stop*> unique_stops;
-    for (const auto& stop : route_by_name_.at(name)->stops) {
-        unique_stops.insert(stop);
-    }
-    return unique_stops.size();
-}
-
-int GetStopsCount(const std::string& name) const {
-    if (route_by_name_.find(name) == route_by_name_.end()) {
-        return 0;
-    }
-    return route_by_name_.at(name)->stops.size();
-}
-
 double GetRouteLength(const std::string& name) const {
     const Route* route = route_by_name_.at(name);
     double length = 0;

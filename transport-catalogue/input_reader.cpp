@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <iostream>
+#include <string>
+
 
 using namespace geo;
 
@@ -85,4 +88,16 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
             catalogue.AddRoute(command.id, ParseRoute(command.description));
         }
     }
+}
+
+void InputReader::ReadDataBase(TransportCatalogue& catalogue, std::istream& input) {
+    int base_request_count;
+    input >> base_request_count >> std::ws;
+
+    for (int i = 0; i < base_request_count; ++i) {
+        std::string line;
+        getline(input, line);
+        ParseLine(line);
+    }
+    ApplyCommands(catalogue);
 }

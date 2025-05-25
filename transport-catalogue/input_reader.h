@@ -23,6 +23,8 @@ struct CommandDescription {
 
 class InputReader {
 public:
+    InputReader() = default;
+    void ReadDataBase(TransportCatalogue& catalogue, std::istream& input);
     /**
      * Парсит строку в структуру CommandDescription и сохраняет результат в commands_
      */
