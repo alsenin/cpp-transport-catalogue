@@ -11,5 +11,6 @@ int main() {
     InputReader reader;
     reader.ReadDataBase(catalogue, std::cin);
     DoStatRequests(catalogue, std::cin, std::cout);
+
     return 0;
 }

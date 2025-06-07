@@ -6,6 +6,8 @@
 #include <iterator>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <regex>
 
 
 using namespace geo;
@@ -48,6 +50,29 @@ std::vector<std::string_view> ParseRoute(std::string_view route) {
     return results;
 }
 
+struct DistanceInfo {
+    std::string stop_name;
+    int distance;
+};
+
+std::vector<DistanceInfo> ParseDistances(const std::string& text) {
+    std::vector<DistanceInfo> result;
+    std::regex pattern(R"((\d+)m to ([^,]+))");
+    
+    auto begin = std::sregex_iterator(text.begin(), text.end(), pattern);
+    auto end = std::sregex_iterator();
+    
+    for (std::sregex_iterator i = begin; i != end; ++i) {
+        std::smatch match = *i;
+        DistanceInfo info;
+        info.distance = std::stoi(match[1].str());
+        info.stop_name = match[2].str();
+        result.push_back(info);
+    }
+    
+    return result;
+}
+
 CommandDescription ParseCommandDescription(std::string_view line) {
     auto colon_pos = line.find(':');
     if (colon_pos == line.npos) {
@@ -83,6 +108,16 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
         }
     }
     
+    for (const auto& command : commands_) {
+        if (command.command == "Stop") {
+            std::vector<DistanceInfo> distances = ParseDistances(command.description);
+            std::string stop1 = command.id;
+            for (const auto& distance : distances) {
+                catalogue.AddDistancesBetweenStops(stop1, distance.stop_name, distance.distance);
+            }
+        }
+    }
+
     for (const auto& command : commands_) {
         if (command.command == "Bus") {
             catalogue.AddRoute(command.id, ParseRoute(command.description));
