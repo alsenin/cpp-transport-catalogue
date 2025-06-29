@@ -1,23 +1,11 @@
 #pragma once
 
-#include "geo.h"
-#include <string>
+#include "domain.h"
 #include <vector>
+#include <string>
 #include <unordered_map>
-#include <optional>
-#include <deque>
-#include <ostream>
-#include <set>
 
-struct Stop {
-    std::string name;
-    geo::Coordinates coordinates;
-};
-
-struct Route {
-    std::string name;
-    std::vector<const Stop*> stops;
-};
+namespace transport_catalogue {
 
 struct RouteInfo {
     int stops_count;
@@ -26,34 +14,53 @@ struct RouteInfo {
     double curvature;
 };
 
-struct PairHash {
-    size_t operator()(const std::pair<std::string, std::string>& pair) const {
-        return std::hash<std::string>{}(pair.first) ^ (std::hash<std::string>{}(pair.second) << 1);
-    }
-};
-
 class TransportCatalogue {
 public:
-    TransportCatalogue() = default;
-    void AddStop(const std::string& name, const geo::Coordinates& coordinates);
-    void AddRoute(const std::string& name, const std::vector<std::string_view>& stops);
-    void AddDistancesBetweenStops(const std::string& stop1, const std::string& stop2, double distance);
-    std::optional<std::set<std::string>> GetStopInfo(const std::string& name) const;
-    std::optional<RouteInfo> GetRouteInfo(const std::string& name) const;
-    void PrintRoutes(std::ostream& out) const;
-    void PrintDistances(std::ostream& out) const;
-    void PrintStops(std::ostream& out) const;
-    void PrintRoutesByStop(std::ostream& out) const;
+    TransportCatalogue() : route_container_(&stop_container_) {}
+    
+    // Добавление остановок из списка инициализации
+    void AddStops(const std::vector<std::pair<std::string, std::pair<double, double>>>& stops);
+    
+    // Добавление одного маршрута
+    void AddRoute(const std::string& name, const std::vector<std::string>& stops, bool is_roundtrip = false);
+    
+    // Добавление расстояний между остановками
+    void AddDistances(const std::vector<std::tuple<std::string, std::string, double>>& distances);
+    
+    // Получение информации об остановке
+    std::vector<std::string> GetStopInfo(const std::string& stop_name) const;
+    
+    // Получение информации об остановке (координаты)
+    const Stop* GetStopByName(const std::string& stop_name) const;
+    
+    // Получение информации о маршруте
+    RouteInfo GetRouteInfo(const std::string& route_name) const;
+    
+    // Дополнительные методы для доступа к контейнерам
+    const domain::StopContainer& GetStopContainer() const { return stop_container_; }
+    const domain::RouteContainer& GetRouteContainer() const { return route_container_; }
+    
+    // Проверка существования
+    bool RouteExists(const std::string& route_name) const;
+
+    // Получение реального расстояния между остановками
+    double GetDistance(const std::string& from, const std::string& to) const;
 
 private:
-    double GetRouteGeoLength(const std::string& name) const;
-    double GetRouteLength(const std::string& name) const;
-
+    // Вспомогательные методы
+    void InvalidateCache() const;
+    void UpdateCache() const;
+    
 private:
-    std::deque<Stop> stops_;
-    std::deque<Route> routes_;
-    std::unordered_map<std::string, const Stop*> stop_by_name_;
-    std::unordered_map<std::string, const Route*> route_by_name_;
-    std::unordered_map<std::string, std::set<std::string>> routes_by_stop_;
-    std::unordered_map<std::pair<std::string, std::string>, double, PairHash> distances_between_stops_;
+    domain::StopContainer stop_container_;
+    domain::RouteContainer route_container_;
+    
+    // Кэш для быстрого поиска маршрутов через остановку
+    mutable std::unordered_map<std::string, std::vector<std::string>> stop_to_routes_cache_;
+    mutable bool cache_valid_ = true;
+    
+    // Расстояния между остановками
+    std::unordered_map<std::string, std::unordered_map<std::string, double>> distances_;
 };
+
+} // namespace transport_catalogue
